@@ -1,4 +1,4 @@
-namespace test2.Models
+namespace dogapi_erolss.Models
 {
     public class Dog
     {
