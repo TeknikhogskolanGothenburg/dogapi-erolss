@@ -28,7 +28,7 @@ namespace dogapi_erolss.Controllers
                 return BadRequest();
             }
             
-            return new ObjectResult(JsonConvert.SerializeObject(retVal));
+            return new ObjectResult(retVal);
         }
 
         // GET: api/Dogs/Bulldog
@@ -44,7 +44,7 @@ namespace dogapi_erolss.Controllers
                 return BadRequest();
             }
             
-            return new ObjectResult(JsonConvert.SerializeObject(retVal));
+            return new ObjectResult(retVal);
 
         }
 
