@@ -21,83 +21,151 @@ namespace dogapi_erolss.Controllers
             var dogs = GetDogsAsJsonList();
 
             var retVal = dogs.Select(x => x.BreedName);
-            
+
 
             if (retVal == null)
             {
                 return BadRequest();
             }
-
-            Response.ContentType = "application/json";
+            
             return new ObjectResult(JsonConvert.SerializeObject(retVal));
         }
 
         // GET: api/Dogs/Bulldog
-        [HttpGet("{name}", Name = "Get")]
-        public IActionResult Get(string name)
+        [HttpGet("{breed}", Name = "Get")]
+        public IActionResult Get(string breed)
         {
             var dogs = GetDogsAsJsonList();
 
-            var retVal = dogs.Where(x => x.BreedName.ToLower() == name.ToLower()).FirstOrDefault();           
+            var retVal = dogs.Where(x => x.BreedName.ToLower() == breed.ToLower()).FirstOrDefault();
 
             if (retVal == null)
             {
                 return BadRequest();
             }
-
-            Response.ContentType = "application/json";
+            
             return new ObjectResult(JsonConvert.SerializeObject(retVal));
 
         }
 
         // POST: api/Dogs
         [HttpPost]
-        public void Post([FromBody]string value)
+        public IActionResult Post([FromBody] Dog value)
         {
+
+            if (value != null)
+            {
+                
+                var dogs = GetDogsAsJsonList();
+                if (!dogs.Exists(x => x.BreedName.ToLower() == value.BreedName.ToLower()))
+                {
+                    var path = "DogFiles\\" + value.BreedName + ".json";
+                    var newVal = JsonConvert.SerializeObject(value);
+                    System.IO.File.WriteAllText(path, newVal);
+
+                    return new CreatedAtRouteResult("Get", new { breed = value.BreedName });
+                }
+            }
+
+            return BadRequest();
         }
 
         // PUT: api/Dogs/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        [HttpPut("{breed}")]
+        public IActionResult Put(string breed, [FromBody]Dog value)
         {
+
+            if (breed != null && value != null)
+            {
+                var files = GetFiles();
+
+                foreach (var file in files)
+                {
+                    var content = System.IO.File.ReadAllText(file);
+                    var dog = JsonConvert.DeserializeObject<Dog>(content);
+
+                    if (dog.BreedName.ToLower() == breed.ToLower())
+                    {
+                        var newVal = value;
+                        if (!String.IsNullOrEmpty(newVal.BreedName))
+                        {
+                            dog.BreedName = newVal.BreedName;
+                        }
+
+                        dog.Description = newVal.Description;
+                        dog.WikipediaUrl = newVal.WikipediaUrl;
+
+                        var newFileContent = JsonConvert.SerializeObject(dog);
+
+                        System.IO.File.WriteAllText(file, newFileContent);
+                    }
+                    else
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+            else
+            {
+                return BadRequest();
+            }
+
+            return new NoContentResult();
+
         }
 
         // DELETE: api/Dogs
         [HttpDelete]
-        public void Delete()
+        public IActionResult Delete()
         {
-            var files = System.IO.Directory.GetFiles("DogFiles", "*.json");
-            
-            foreach (var file in files)
+            var files = GetFiles();
+
+            if (files != null)
             {
-                System.IO.File.Delete(file);
+                foreach (var file in files)
+                {
+                    System.IO.File.Delete(file);
+                }
+
+                return new NoContentResult();
+            }
+            else
+            {
+                return BadRequest();
             }
 
         }
 
         // DELETE: api/Dogs/5
-        [HttpDelete("{name}")]
-        public void Delete(string name)
+        [HttpDelete("{breed}")]
+        public IActionResult Delete(string breed)
         {
-            var files = System.IO.Directory.GetFiles("DogFiles", "*.json");
-
-            foreach (var file in files)
+            var files = GetFiles();
+            if (files != null)
             {
-                var content = System.IO.File.ReadAllText(file);
-                var dog = JsonConvert.DeserializeObject<Dog>(content);
-                if (dog.BreedName.ToLower() == name.ToLower())
+                foreach (var file in files)
                 {
-                    System.IO.File.Delete(file);
+                    var content = System.IO.File.ReadAllText(file);
+                    var dog = JsonConvert.DeserializeObject<Dog>(content);
+                    if (dog.BreedName.ToLower() == breed.ToLower())
+                    {
+                        System.IO.File.Delete(file);
+                    }
                 }
-            }
 
+                return new NoContentResult();
+            }
+            else
+            {
+                return BadRequest();
+            }
         }
 
 
 
-        private List<string> GetFileList()
+        private string[] GetFiles()
         {
-            var files = System.IO.Directory.GetFiles("DogFiles", "*.json").ToList();
+            var files = System.IO.Directory.GetFiles("DogFiles", "*.json");
 
             return files;
         }
